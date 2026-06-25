@@ -38,9 +38,14 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const cartCountVal = useStore((s) => s.cartCount());
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -130,13 +135,15 @@ export default function Navbar() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-lg hover:bg-accent transition-colors hidden sm:flex"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            {mounted && (
+              <button
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                className="p-2 rounded-lg hover:bg-accent transition-colors hidden sm:flex"
+                aria-label="Toggle theme"
+              >
+                {resolvedTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+            )}
 
             <Link
               href="/shop/wishlist"

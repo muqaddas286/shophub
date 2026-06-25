@@ -5,65 +5,31 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CartItem } from '@/types';
-import { getCartItems, updateCartItem, removeCartItem } from '@/lib/db/cart';
 import { useStore } from '@/lib/store/useStore';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const clearCartLocal = useStore((s) => s.clearCart);
+  const cart = useStore((s) => s.cart);
+  const updateCartQuantity = useStore((s) => s.updateCartQuantity);
+  const removeFromCart = useStore((s) => s.removeFromCart);
+  const clearCart = useStore((s) => s.clearCart);
 
-  useEffect(() => {
-    loadCart();
-  }, []);
-
-  async function loadCart() {
-    try {
-      const data = await getCartItems();
-      setItems(data);
-    } catch {
-      toast({ title: 'Please sign in to view your cart', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleUpdateQuantity = async (id: string, qty: number) => {
-    try {
-      await updateCartItem(id, qty);
-      setItems(items.map((i) => (i.id === id ? { ...i, quantity: qty } : i)).filter((i) => i.quantity > 0));
-    } catch {
-      toast({ title: 'Error updating quantity', variant: 'destructive' });
-    }
+  const handleUpdateQuantity = (id: string, qty: number) => {
+    updateCartQuantity(id, qty);
   };
 
-  const handleRemove = async (id: string) => {
-    try {
-      await removeCartItem(id);
-      setItems(items.filter((i) => i.id !== id));
-      toast({ title: 'Item removed' });
-    } catch {
-      toast({ title: 'Error removing item', variant: 'destructive' });
-    }
+  const handleRemove = (id: string) => {
+    removeFromCart(id);
+    toast({ title: 'Item removed' });
   };
 
-  const subtotal = items.reduce((sum, i) => sum + (i.product?.price || 0) * i.quantity, 0);
+  const subtotal = cart.reduce((sum, i) => sum + (i.product?.price || 0) * i.quantity, 0);
   const shipping = subtotal > 50 ? 0 : 9.99;
   const total = subtotal + shipping;
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-24 text-center">
-        <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto" />
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
+  if (cart.length === 0) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
         <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
@@ -83,7 +49,7 @@ export default function CartPage() {
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           <AnimatePresence>
-            {items.map((item) => (
+            {cart.map((item) => (
               <motion.div
                 key={item.id}
                 layout
@@ -135,6 +101,14 @@ export default function CartPage() {
               </motion.div>
             ))}
           </AnimatePresence>
+          <div className="flex justify-between items-center pt-4">
+            <Button variant="outline" asChild>
+              <Link href="/shop">Continue Shopping</Link>
+            </Button>
+            <Button variant="ghost" onClick={clearCart} className="text-red-500">
+              Clear Cart
+            </Button>
+          </div>
         </div>
 
         {/* Order Summary */}
@@ -159,9 +133,6 @@ export default function CartPage() {
               <Link href="/shop/checkout">
                 Checkout <ArrowRight className="w-4 h-4" />
               </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full mt-2">
-              <Link href="/shop">Continue Shopping</Link>
             </Button>
           </div>
         </div>

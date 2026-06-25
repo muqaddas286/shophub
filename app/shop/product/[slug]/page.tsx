@@ -8,7 +8,7 @@ import { Star, ShoppingCart, Heart, Minus, Plus, Truck, Shield, RotateCcw, Chevr
 import { motion, AnimatePresence } from 'framer-motion';
 import { Product, Review } from '@/types';
 import { getProductBySlug, getProductReviews } from '@/lib/db/products';
-import { addCartItem } from '@/lib/db/cart';
+import { useStore } from '@/lib/store/useStore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,6 +25,15 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { toast } = useToast();
+
+  const addToCart = useStore((s) => s.addToCart);
+  const cart = useStore((s) => s.cart);
+  const wishlist = useStore((s) => s.wishlist);
+  const addWishlistLocal = useStore((s) => s.addToWishlist);
+  const removeWishlistLocal = useStore((s) => s.removeFromWishlist);
+
+  const isInWishlist = product ? wishlist.some((w) => w.product_id === product.id) : false;
+  const cartItem = product ? cart.find((c) => c.product_id === product.id) : null;
 
   useEffect(() => {
     async function load() {
@@ -50,13 +59,27 @@ export default function ProductDetailPage() {
     load();
   }, [slug]);
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (!product) return;
-    try {
-      await addCartItem(product.id, quantity);
-      toast({ title: 'Added to cart', description: `${quantity} x ${product.name}` });
-    } catch {
-      toast({ title: 'Error', description: 'Please sign in to add items', variant: 'destructive' });
+    addToCart({
+      id: crypto.randomUUID(),
+      user_id: '',
+      product_id: product.id,
+      quantity,
+      product,
+    });
+    toast({ title: 'Added to cart', description: `${quantity} x ${product.name}` });
+  };
+
+  const handleToggleWishlist = () => {
+    if (!product) return;
+    if (isInWishlist) {
+      const item = wishlist.find((w) => w.product_id === product.id);
+      if (item) removeWishlistLocal(item.id);
+      toast({ title: 'Removed from wishlist' });
+    } else {
+      addWishlistLocal({ id: crypto.randomUUID(), user_id: '', product_id: product.id, product });
+      toast({ title: 'Added to wishlist' });
     }
   };
 
@@ -198,11 +221,11 @@ export default function ProductDetailPage() {
               <div className="flex gap-3">
                 <Button onClick={handleAddToCart} size="lg" className="flex-1 gap-2">
                   <ShoppingCart className="w-5 h-5" />
-                  Add to Cart
+                  {cartItem ? `In Cart (${cartItem.quantity})` : 'Add to Cart'}
                 </Button>
-                <Button variant="outline" size="lg" className="gap-2">
-                  <Heart className="w-5 h-5" />
-                  Wishlist
+                <Button variant="outline" size="lg" className="gap-2" onClick={handleToggleWishlist}>
+                  <Heart className={`w-5 h-5 ${isInWishlist ? 'fill-red-500 text-red-500' : ''}`} />
+                  {isInWishlist ? 'Saved' : 'Wishlist'}
                 </Button>
               </div>
             </div>

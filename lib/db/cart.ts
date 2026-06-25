@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { CartItem } from '@/types';
+import { CartItem, Product } from '@/types';
 
 export async function getCartItems(): Promise<CartItem[]> {
   const { data, error } = await supabase

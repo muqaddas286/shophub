@@ -22,11 +22,11 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
-    } else {
+    } else if (data.user) {
       toast({ title: 'Welcome back!' });
       router.push('/');
     }
